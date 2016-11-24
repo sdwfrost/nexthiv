@@ -19,5 +19,11 @@ setup(
         'biopython>=1.68',
         'Flask>=0.11.1',
         'Frozen_Flask>=0.13'
+    ],
+    dependency_links=[
+        'git+ssh://git@github.com/veg/bioext.git@master'
+    ],
+    scripts=[
+        'bin/nexthiv'
     ]
 )
