@@ -1,0 +1,27 @@
+rethinkdb:
+  host: 'localhost'
+  port: 28015
+  db: 'nexthiv'
+tables:
+  - sequences
+  - demographics
+  - regimens
+  - labs
+  - references
+  - resistance
+  - subtypes
+  - clustering
+  - phylogenies
+directories:
+  datadir: './data'
+  tmpdir: './tmp'
+executables:
+  mafft:
+    cmd: 'mafft'
+  tn93:
+    cmd: 'tn93'
+  iqtree:
+    cmd: 'iqtree-omp'
+    threads: 4
+    model: 'GTR+G4'
+    bootstrap_samples: 1000

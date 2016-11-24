@@ -1,0 +1,33 @@
+#/usr/bin/env python3
+
+import argparse
+import yaml
+import nexthiv
+
+parser = argparse.ArgumentParser()
+subparsers = parser.add_subparsers(title='subcommands',description='valid subcommands',help='subcommand help',dest='subparser_name')
+
+init_parser=subparsers.add_parser('init',help='Initialise database')
+init_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+
+import_parser=subparsers.add_parser('import',help='Import CSV')
+import_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+import_parser.add_argument('-i','--input',type=argparse.FileType('r'),required=True,help='TSV file')
+import_parser.add_argument('-d','--destination',required=True,help='Destination table')
+
+arguments=parser.parse_args()
+action=arguments.subparser_name
+
+# Init
+if action=='init':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  nexthiv.db.dbSetup(config)
+
+# Import
+if action=='import':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  data=nexthiv.db.tsv2json(arguments.input)
+  tbl=arguments.destination
+  nexthiv.db.dbInsert(config,tbl,data,chunksize=100000)
