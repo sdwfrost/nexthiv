@@ -14,5 +14,10 @@ setup(
     description='Processing code for nextHIV',
     long_description=long_description,
     install_requires=[
+        'rethinkdb>=2.3',
+        'PyYAML>=3.12',
+        'biopython>=1.68',
+        'Flask>=0.11.1',
+        'Frozen_Flask>=0.13'
     ]
 )
