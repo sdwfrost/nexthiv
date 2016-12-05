@@ -4,6 +4,7 @@ rethinkdb:
   db: 'nexthiv'
 tables:
   - sequences
+  - processed_sequences
   - demographics
   - regimens
   - labs
@@ -12,6 +13,13 @@ tables:
   - subtypes
   - clustering
   - phylogenies
+sequence:
+  table: 'sequences'
+  name: 'SEQUENCE'
+  startpos: 0
+  endpos: 1497
+  processed_table: 'processed_sequences'
+  processed_name: 'SEQUENCE_ALIGNED'
 directories:
   datadir: './data'
   tmpdir: './tmp'

@@ -1,4 +1,4 @@
-#/usr/bin/env python3
+#!/usr/bin/env python3
 
 import argparse
 import yaml
@@ -15,6 +15,9 @@ import_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=
 import_parser.add_argument('-i','--input',type=argparse.FileType('r'),required=True,help='TSV file')
 import_parser.add_argument('-d','--destination',required=True,help='Destination table')
 
+align_parser=subparsers.add_parser('align',help='Align sequences')
+align_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+
 arguments=parser.parse_args()
 action=arguments.subparser_name
 
@@ -22,7 +25,7 @@ action=arguments.subparser_name
 if action=='init':
   config_file=arguments.config
   config=yaml.load(config_file)
-  nexthiv.db.dbSetup(config)
+  nexthiv.db.db_setup(config)
 
 # Import
 if action=='import':
@@ -30,4 +33,18 @@ if action=='import':
   config=yaml.load(config_file)
   data=nexthiv.db.tsv2json(arguments.input)
   tbl=arguments.destination
-  nexthiv.db.dbInsert(config,tbl,data,chunksize=100000)
+  nexthiv.db.db_insert(config,tbl,data,chunksize=100000)
+
+# Align
+if action=='align':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  aln=nexthiv.align.align_seqs(config)
+  aln=nexthiv.align.trim_alignment(config,aln)
+  nexthiv.db.insert_seqs(config,aln,config['sequence']['processed_table'],config['sequence']['processed_name'])
+
+# Resistance
+
+# Add references
+
+# Cluster
