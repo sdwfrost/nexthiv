@@ -18,6 +18,10 @@ import_parser.add_argument('-d','--destination',required=True,help='Destination 
 align_parser=subparsers.add_parser('align',help='Align sequences')
 align_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
+cluster_parser=subparsers.add_parser('cluster',help='Cluster sequences')
+cluster_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+
+
 arguments=parser.parse_args()
 action=arguments.subparser_name
 
@@ -45,6 +49,9 @@ if action=='align':
 
 # Resistance
 
-# Add references
-
 # Cluster
+if action=='cluster':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  dst=nexthiv.cluster.cluster(config)
+  print(dst)

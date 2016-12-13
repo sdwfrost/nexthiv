@@ -23,11 +23,16 @@ sequence:
 directories:
   datadir: './data'
   tmpdir: './tmp'
-executables:
+programs:
   mafft:
     cmd: 'mafft'
   tn93:
     cmd: 'tn93'
+    threshold: 1.0
+    ref_threshold: 0.05
+    ambiguities: 'resolve'
+    min_overlap: 100
+    fraction: 1.0
   iqtree:
     cmd: 'iqtree-omp'
     threads: 4

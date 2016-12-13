@@ -9,7 +9,7 @@ from copy import copy, deepcopy
 from Bio import SeqIO
 from Bio.Seq import Seq, reverse_complement as rc
 from Bio.SeqRecord import SeqRecord
-from Bio.Alphabet import IUPAC
+from Bio.Alphabet import IUPAC, Gapped
 from Bio.Align import MultipleSeqAlignment
 
 from BioExt.args import (

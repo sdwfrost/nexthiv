@@ -1,4 +1,4 @@
 """
 Processing code for nextHIV
 """
-from . import db, align
+from . import db, align, cluster

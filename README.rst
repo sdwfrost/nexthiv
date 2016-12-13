@@ -1,106 +1,52 @@
 nextHIV
-=======================
-
-|PyPI| |GitHub-license| |Requires.io| |Travis|
-
-$
-    Built from `makenew/python-package <https://github.com/makenew/python-package>`__.
-$
-
-.. |PyPI| image:: https://img.shields.io/pypi/v/nexthiv.svg
-   :target: https://pypi.python.org/pypi/nexthiv
-   :alt: PyPI
-.. |GitHub-license| image:: https://img.shields.io/github/license/sdwfrost/nexthiv.svg
-   :target: ./LICENSE.txt
-   :alt: GitHub license
-.. |Requires.io| image:: https://img.shields.io/requires/github/sdwfrost/nexthiv.svg
-   :target: https://requires.io/github/sdwfrost/nexthiv/requirements/
-   :alt: Requires.io
-.. |Travis| image:: https://img.shields.io/travis/sdwfrost/nexthiv.svg
-   :target: https://travis-ci.org/sdwfrost/nexthiv
-   :alt: Travis
+=======
 
 Description
 -----------
 
-$
-Processing code for nextHIV$
+Processing code for nextHIV. The package skeleton was created using
+`makenew/python-package <https://github.com/makenew/python-package>`__.
 
+Docker installation
+-------------------
 
-Installation
-------------
-
-This package is registered on the `Python Package Index (PyPI)`_
-as nexthiv_.
-
-Add this line to your application's requirements.txt
-
-::
-
-    nexthiv
-
-and install it with
-
-::
-
-    $ pip install -r requirements.txt
-
-If you are writing a Python package which will depend on this,
-add this to your requirements in ``setup.py``.
-
-Alternatively, install it directly using pip with
-
-::
-
-    $ pip install nexthiv
-
-.. _nexthiv: https://pypi.python.org/pypi/nexthiv
-.. _Python Package Index (PyPI): https://pypi.python.org/
-
-Development and Testing
------------------------
+Local installation
+------------------
 
 Source Code
 ~~~~~~~~~~~
 
-The `nexthiv source`_ is hosted on GitHub.
-Clone the project with
+The `nexthiv source <https://github.com/sdwfrost/nexthiv>`__ is hosted
+on GitHub. Clone the project with
 
-::
+.. code:: bash
 
-    $ git clone https://github.com/sdwfrost/nexthiv.git
-
-.. _nexthiv source: https://github.com/sdwfrost/nexthiv
+    git clone https://github.com/sdwfrost/nexthiv.git
 
 Requirements
 ~~~~~~~~~~~~
 
-You will need `Python 3`_ with pip_.
+You will need `Python 3 <https://www.python.org/>`__ with
+`pip <https://pip.pypa.io/>`__.
 
-Install the development dependencies with
+Install the dependencies with
 
-::
+.. code:: bash
 
-    $ pip install -r requirements.devel.txt
+    pip install -r requirements.txt
 
-.. _pip: https://pip.pypa.io/
-.. _Python 3: https://www.python.org/
+Usage
+-----
 
-Tests
-~~~~~
+Configuration
+~~~~~~~~~~~~~
 
-Lint code with
+Initialising database
+~~~~~~~~~~~~~~~~~~~~~
 
-::
+.. code:: bash
 
-    $ python setup.py lint
-
-
-Run tests with
-
-::
-
-    $ python setup.py test
+    nexthiv init -c nexthiv.yaml
 
 Contributing
 ------------
@@ -119,7 +65,8 @@ To submit a patch:
 License
 -------
 
-This Python package is licensed under the MIT license.
+This Python package and associated files are licensed under the MIT
+license.
 
 Warranty
 --------

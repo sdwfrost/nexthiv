@@ -1,0 +1,93 @@
+---
+title: "nextHIV Summary Report"
+date: "12 December 2016"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+
+```{r loadlibraries}
+suppressPackageStartupMessages(library(rethinker))
+suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(cowplot))
+suppressPackageStartupMessages(library(plotly))
+```
+
+```{r setglobals}
+host <- "localhost"
+port <- 28015
+authKey <- NULL
+v <- "V0_4"
+db <- "nexthiv"
+pid <- "CFAR_PID"
+```
+
+```{r definefunctions}
+get_table <- function(db,tbl,maxResults=10000,host="localhost",port=28015,authKey=NULL,v="V0_4"){
+  connection <- openConnection(host = host, port = port, authKey = authKey, v = v)
+  r() -> query
+  query$db(db)
+  query$table(tbl)
+  cursor <- query$run(connection)
+  l <- cursorToList(cursor,maxResults=maxResults)
+  df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
+  close(connection)
+  return(df)
+}
+```
+
+
+```{r loadtables}
+demographics <- get_table(db,"demographics")
+```
+
+### Year of cohort entry
+
+```{r}
+p <- ggplot(demographics,aes(x=as.double(YEAR_OF_COHORT_ENTRY)))+geom_bar()+xlab("Year of cohort entry")+ylab("Count")
+p
+```
+
+## Demographics
+
+### Age at entry
+
+```{r}
+p <- ggplot(demographics,aes(x=as.double(AGE_AT_ENROLLMENT)))+geom_histogram(binwidth=1)+xlab("Age at cohort entry")+ylab("Count")
+p
+```
+
+### Gender
+
+```{r}
+p <- ggplot(demographics,aes(x=SEX))+geom_bar()+xlab("Gender")+ylab("Count")+scale_x_discrete(labels=c("Female","Male"))
+p
+```
+
+```{r}
+p <- ggplot(demographics,aes(x=RISK1))+geom_bar()+xlab("Risk behavior")+ylab("Count")
+p
+```
+
+### Race
+
+```{r}
+p <- ggplot(demographics,aes(x=RACE))+geom_bar()+xlab("Race")+ylab("Count")
+p
+```
+
+
+## Sequences
+
+```{r}
+sequences <- get_table(db,"sequences")
+```
+
+```{r}
+df <- as.data.frame.table(table(table(sequences$CFAR_PID)))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x=Number,y=Count))+geom_bar(stat="identity")+xlab("Sequences per individual")+ylab("Count")
+p
+```

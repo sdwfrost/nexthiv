@@ -15,7 +15,7 @@ def get_connection(cfg):
     connection = r.connect(host=RDB_HOST, port=RDB_PORT)
     return(connection)
 
-def db_stup(cfg):
+def db_setup(cfg):
     NEXTHIV_DB=cfg["rethinkdb"]["db"]
     connection = get_connection(cfg)
     tbls=cfg["tables"]
@@ -55,21 +55,6 @@ def get_seqs(cfg):
     connection = get_connection(cfg)
     try:
         curs=r.db(NEXTHIV_DB).table('sequences').pluck("id",SEQUENCE).run(connection)
-        # print('Sequence extraction completed.')
-    except RqlRuntimeError:
-        print('Error!')
-    finally:
-        s=[x for x in curs]
-        connection.close()
-    return(s)
-
-def get_alignment(cfg):
-    NEXTHIV_DB=cfg["rethinkdb"]["db"]
-    SEQUENCE=cfg["sequence"]["processed_name"]
-    TBL=cfg["sequence"]["processed_table"]
-    connection = get_connection(cfg)
-    try:
-        curs=r.db(NEXTHIV_DB).table(TBL).pluck("id",SEQUENCE).run(connection)
         # print('Sequence extraction completed.')
     except RqlRuntimeError:
         print('Error!')
