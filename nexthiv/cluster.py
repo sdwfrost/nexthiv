@@ -39,6 +39,28 @@ def cluster(cfg):
                     '-f', output_format, OUTPUT_FASTA_FN]
         subprocess.check_call(tn93_process,stdout=tn93_fh,stderr=tn93_fh)
     dst=pd.read_csv(OUTPUT_TN93_FN)
-    dst=dst.sort_values(by=["ID1","Distance"],ascending=True)
-    dst=dst.drop_duplicates(subset="ID1",keep="first")
     return(dst)
+
+def insert_clustering(cfg):
+    # Retrieve sequence names from sequences table
+    NEXTHIV_DB=cfg["rethinkdb"]["db"]
+    connection = get_connection(cfg)
+    if not r.db(NEXTHIV_DB).table_list().contains(cfg):
+        stop("Table "+tbl+" does not exist.")
+    dst=cluster(cfg)
+    dst=dst.sort_values(by=["ID1","Distance"],ascending=True)
+    mindst=dst.drop_duplicates(subset="ID1",keep="first")
+    try:
+        tbl=cfg["clustering"]["table"]
+        for row in mindst.iterrows():
+            r.db(NEXTHIV_DB).table(tbl).insert({"id":row[1]["ID1"], "ALTER":row[1]["ID2"], "MINDST":row[1]["Distance"]}).run(connection)
+    except RqlRuntimeError:
+        print('Error!')
+    try:
+        tbl=cfg["clustering"]["distances_table"]
+        for row in dst.iterrows():
+            r.db(NEXTHIV_DB).table(tbl).insert({"id":row[1]["ID1"], "ALTER":row[1]["ID2"], "DST":row[1]["Distance"]}).run(connection)
+    except RqlRuntimeError:
+        print('Error!')
+    finally:
+        connection.close()

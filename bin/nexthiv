@@ -53,5 +53,4 @@ if action=='align':
 if action=='cluster':
   config_file=arguments.config
   config=yaml.load(config_file)
-  dst=nexthiv.cluster.cluster(config)
-  print(dst)
+  nexthiv.cluster.insert_clustering(config)

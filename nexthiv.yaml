@@ -12,14 +12,24 @@ tables:
   - resistance
   - subtypes
   - clustering
+  - distances
   - phylogenies
 sequence:
   table: 'sequences'
-  name: 'SEQUENCE'
+  column: 'SEQUENCE'
+  pid:
+    - 'CFAR_PID'
+  ordering:
+    - 'AGE_AT_SEQUENCE'
+  collection_date:
+    - 'YEAR_OF_SEQUENCE'
   startpos: 0
   endpos: 1497
   processed_table: 'processed_sequences'
   processed_name: 'SEQUENCE_ALIGNED'
+clustering:
+  table: 'clustering'
+  distance_table: 'distances'
 directories:
   datadir: './data'
   tmpdir: './tmp'
