@@ -2,7 +2,7 @@ import os
 import tempfile
 import subprocess
 
-from nexthiv.db import get_connection
+from nexthiv.db import get_connection, get_dict
 from nexthiv.align import get_alignment
 
 import rethinkdb as r
@@ -41,7 +41,7 @@ def cluster(cfg):
     dst=pd.read_csv(OUTPUT_TN93_FN)
     return(dst)
 
-def insert_clustering(cfg):
+def insert_distances(cfg):
     # Retrieve sequence names from sequences table
     NEXTHIV_DB=cfg["rethinkdb"]["db"]
     connection = get_connection(cfg)
@@ -49,17 +49,33 @@ def insert_clustering(cfg):
         stop("Table "+tbl+" does not exist.")
     dst=cluster(cfg)
     dst=dst.sort_values(by=["ID1","Distance"],ascending=True)
+    try:
+        tbl=cfg["clustering"]["distances_table"]
+        for row in dst.iterrows():
+            r.db(NEXTHIV_DB).table(tbl).insert({"id":row[1]["ID1"], "ALTER":row[1]["ID2"], "DST":row[1]["Distance"]}).run(connection)
+    except RqlRuntimeError:
+        print('Error!')
+    finally:
+        connection.close()
+
+def insert_clustering(cfg):
+    # Retrieve sequence names from sequences table
+    NEXTHIV_DB=cfg["rethinkdb"]["db"]
+    connection = get_connection(cfg)
+    if not r.db(NEXTHIV_DB).table_list().contains(cfg):
+        stop("Table "+tbl+" does not exist.")
+    dst=cluster(cfg)
+    iddict=get_dict(cfg,cfg["sequence"]["table"],"id",cfg["sequence"]["pid"])
+    pid1=[iddict[x] for x in dst["ID1"]]
+    pid2=[iddict[x] for x in dst["ID2"]]
+    idx=[x[0]!=x[1] for x in zip(pid1,pid2)]
+    dst=dst[idx]
+    dst=dst.sort_values(by=["ID1","Distance"],ascending=True)
     mindst=dst.drop_duplicates(subset="ID1",keep="first")
     try:
         tbl=cfg["clustering"]["table"]
         for row in mindst.iterrows():
             r.db(NEXTHIV_DB).table(tbl).insert({"id":row[1]["ID1"], "ALTER":row[1]["ID2"], "MINDST":row[1]["Distance"]}).run(connection)
-    except RqlRuntimeError:
-        print('Error!')
-    try:
-        tbl=cfg["clustering"]["distances_table"]
-        for row in dst.iterrows():
-            r.db(NEXTHIV_DB).table(tbl).insert({"id":row[1]["ID1"], "ALTER":row[1]["ID2"], "DST":row[1]["Distance"]}).run(connection)
     except RqlRuntimeError:
         print('Error!')
     finally:

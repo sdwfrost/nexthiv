@@ -92,3 +92,16 @@ def get_dataframe(cfg,tbl):
         connection.close()
     df=pd.DataFrame.from_records(s)
     return(df)
+
+def get_dict(cfg,tbl,ky,val):
+    NEXTHIV_DB=cfg["rethinkdb"]["db"]
+    connection = get_connection(cfg)
+    try:
+        curs=r.db(NEXTHIV_DB).table(tbl).pluck(ky,val).run(connection)
+    except RqlRuntimeError:
+        print('Error!')
+    finally:
+        s=[x for x in curs]
+        connection.close()
+    d={x[ky]:x[val] for x in s}
+    return(d)

@@ -18,7 +18,10 @@ import_parser.add_argument('-d','--destination',required=True,help='Destination 
 align_parser=subparsers.add_parser('align',help='Align sequences')
 align_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
-cluster_parser=subparsers.add_parser('cluster',help='Cluster sequences')
+distance_parser=subparsers.add_parser('distance',help='Calculate distances')
+distance_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+
+cluster_parser=subparsers.add_parser('cluster',help='CLuster sequences')
 cluster_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
 
@@ -49,7 +52,13 @@ if action=='align':
 
 # Resistance
 
-# Cluster
+# Distances
+if action=='distance':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  nexthiv.cluster.insert_distances(config)
+
+# Clustering
 if action=='cluster':
   config_file=arguments.config
   config=yaml.load(config_file)

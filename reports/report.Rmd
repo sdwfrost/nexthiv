@@ -80,7 +80,37 @@ ggplotly(p)
 
 
 ```{r}
-p <- ggplot(demographics,aes(x=RACE))+geom_bar()+xlab("Race")+ylab("Count")
+zip3 <- demographics$postCode3
+ztbl <- table(zip3)
+rarezip <- names(ztbl)[ztbl<=5]
+zip3[zip3%in%rarezip] <- "Other"
+x <- data.frame(ZIP3=zip3)
+p <- ggplot(x,aes(x=ZIP3))+geom_bar()+xlab("ZIP3 code")+ylab("Count")
+ggplotly(p)
+```
+
+
+```{r}
+cntry <- demographics$COUNTRY_OF_ORIGIN
+cntry[cntry==""] <- "MISSING"
+ctbl <- table(cntry)
+rarecntry <- names(ctbl)[ctbl<=5]
+cntry[cntry%in%rarecntry] <- "OTHER"
+x <- data.frame(Country=factor(cntry,levels=names(sort(table(cntry),decreasing=TRUE))))
+p <- ggplot(x,aes(x=Country))+geom_bar()+xlab("Country of origin")+ylab("Count")+ theme(axis.text.x = element_text(angle = 90, hjust = -1))
+ggplotly(p)
+```
+
+```{r}
+races <- c("Undefined","Caucasian","African American","Hispanic","Native American","Asian","Pacific Islander","Indian","Middle Eastern","African","Mixed")
+race <- as.integer(demographics$RACE)
+race <- race+1
+race <- races[race]
+rtbl <- table(race)
+rarerace <- names(rtbl)[rtbl<=5]
+race[race%in%rarerace] <- "Other"
+x <- data.frame(Race=factor(race,levels=names(sort(table(race),decreasing=TRUE))))
+p <- ggplot(x,aes(x=Race))+geom_bar()+xlab("Race")+ylab("Count")+ theme(axis.text.x = element_text(angle = 90, hjust = -1))
 ggplotly(p)
 ```
 
@@ -106,7 +136,7 @@ datatable(df)
 
 ```{r}
 #redo with clustering
-seqclus <- merge(sequences,clustering[,1:3],by.x="id",by.y="SEQNAME")
+seqclus <- merge(sequences,clustering[,1:3],by.x="id",by.y="id")
 o <- order(seqclus$CFAR_PID,as.double(seqclus$AGE_AT_SEQUENCE))
 seqclus <- seqclus[o,]
 idx <- !duplicated(seqclus$CFAR_PID)
@@ -117,6 +147,7 @@ idx <- !duplicated(seqclus$CFAR_PID)
 p <- ggplot(clustering,aes(x=as.double(MINDST)))+geom_histogram(binwidth=0.001)+xlab("Minimum genetic distance")+ylab("Count")
 ggplotly(p)
 ```
+
 
 
 
