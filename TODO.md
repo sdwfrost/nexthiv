@@ -1,0 +1,5 @@
+- Generate identifier for sequences and insert into processed table, along with original sequence, date etc.
+- Reference import with subtype field indices
+- Resistance scores in separate file
+- Update db refs to include name of backend
+- Fix error in clustering

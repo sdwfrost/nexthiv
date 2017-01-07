@@ -1,7 +1,8 @@
-rethinkdb:
+db:
+  backend: 'rethinkdb'
   host: 'localhost'
   port: 28015
-  db: 'nexthiv'
+  name: 'nexthiv'
 tables:
   - sequences
   - processed_sequences
@@ -17,6 +18,7 @@ tables:
 sequence:
   table: 'sequences'
   column: 'SEQUENCE'
+  name: 'SEQNAME'
   pid: 'CFAR_PID'
   ordering: 'AGE_AT_SEQUENCE'
   collection_date: 'YEAR_OF_SEQUENCE'
@@ -27,12 +29,16 @@ sequence:
 clustering:
   table: 'clustering'
   distances_table: 'distances'
+resistance:
+  table: 'resistance'
+  protease_length: 99
+  rt_length: 400
+phylogeny:
+  program: 'iqtree'
 directories:
   datadir: './data'
   tmpdir: './tmp'
 programs:
-  mafft:
-    cmd: 'mafft'
   tn93:
     cmd: 'tn93'
     threshold: 1.0
@@ -42,6 +48,11 @@ programs:
     fraction: 1.0
   iqtree:
     cmd: 'iqtree-omp'
+    threads: 4
+    model: 'GTR+G4'
+    bootstrap_samples: 1000
+  fasttree:
+    cmd: 'fasttreeMP'
     threads: 4
     model: 'GTR+G4'
     bootstrap_samples: 1000

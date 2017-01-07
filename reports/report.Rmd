@@ -12,6 +12,7 @@ knitr::opts_chunk$set(echo = FALSE)
 ```{r loadlibraries}
 suppressPackageStartupMessages(library(rethinker))
 suppressPackageStartupMessages(library(ggplot2))
+suppressPackageStartupMessages(library(ggforce))
 suppressPackageStartupMessages(library(cowplot))
 suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(DT))
@@ -28,23 +29,37 @@ pid <- "CFAR_PID"
 ```
 
 ```{r definefunctions}
-get_table <- function(db,tbl,maxResults=10000,host="localhost",port=28015,authKey=NULL,v="V0_4"){
+get_list <- function(db,tbl,maxResults=10000,host="localhost",port=28015,authKey=NULL,v="V0_4"){
   connection <- openConnection(host = host, port = port, authKey = authKey, v = v)
   r() -> query
   query$db(db)
   query$table(tbl)
   cursor <- query$run(connection)
   l <- cursorToList(cursor,maxResults=maxResults)
-  df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
   close(connection)
+  return(l)
+}
+get_table <- function(db,tbl,maxResults=10000,host="localhost",port=28015,authKey=NULL,v="V0_4"){
+  l <- get_list(db,tbl,maxResults,host,port,authKey,v)
+  df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
   return(df)
 }
+# Need to add column filters
 ```
 
 ```{r loadtables}
 demographics <- get_table(db,"demographics")
 sequences <- get_table(db,"sequences")
 clustering <- get_table(db,"clustering")
+resistance <- get_list(db,"resistance")
+```
+
+```{r makemastertable}
+master <- merge(sequences,clustering[,1:3],by.x="id",by.y="id")
+master <- merge(master,demographics,by="CFAR_PID")
+o <- order(master$CFAR_PID,as.double(master$AGE_AT_SEQUENCE))
+master <- master[o,]
+master$BASELINE <- !duplicated(master$CFAR_PID)
 ```
 
 ### Summary
@@ -52,6 +67,8 @@ clustering <- get_table(db,"clustering")
 Date of report: `r Sys.Date()`
 
 No. of individuals: `r length(unique(sequences$CFAR_PID))`
+
+No. of sequences: `r length(sequences$CFAR_PID)`
 
 ### Demographics
 
@@ -135,19 +152,22 @@ datatable(df)
 
 
 ```{r}
-#redo with clustering
-seqclus <- merge(sequences,clustering[,1:3],by.x="id",by.y="id")
-o <- order(seqclus$CFAR_PID,as.double(seqclus$AGE_AT_SEQUENCE))
-seqclus <- seqclus[o,]
-idx <- !duplicated(seqclus$CFAR_PID)
-```
-
-
-```{r}
-p <- ggplot(clustering,aes(x=as.double(MINDST)))+geom_histogram(binwidth=0.001)+xlab("Minimum genetic distance")+ylab("Count")
+d <- master
+o <- order(d$CFAR_PID,d$MINDST)
+idx <- !duplicated(d$CFAR_PID)
+d <- d[idx,]
+p <- ggplot(d,aes(x=as.double(MINDST)))+geom_histogram(binwidth=0.001)+xlab("Minimum genetic distance")+ylab("Count")
 ggplotly(p)
 ```
 
+```{r}
+p <- ggplot(d,aes(y=as.double(MINDST),x=SEX))+geom_sina(aes(col=SEX))+xlab("Gender")+ylab("Distance")+scale_x_discrete(labels=c("Female","Male"))+theme(legend.position="none")
+ggplotly(p)
+```
 
+```{r}
+p <- ggplot(d,aes(y=as.double(MINDST),x=RISK1))+geom_sina(aes(col=RISK1))+xlab("Risk behavior")+ylab("Distance")+theme(legend.position="none")
+ggplotly(p)
+```
 
 

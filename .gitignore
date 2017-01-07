@@ -79,3 +79,5 @@ reports/*.html
 reports/*.md
 reports/*.pdf
 
+# Local data
+data/

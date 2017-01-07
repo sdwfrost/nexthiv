@@ -1,8 +1,6 @@
-from nexthiv.db import get_connection, get_seqs, insert_seqs
+import nexthiv
 from nexthiv.refseqs import HXB2_POL
-
-import rethinkdb as r
-from rethinkdb.errors import RqlRuntimeError
+from nexthiv.utils import get_baseline_ids
 
 from copy import copy, deepcopy
 
@@ -28,8 +26,10 @@ from BioExt.scorematrices import (
 from BioExt.uds import _align_par
 from BioExt.misc import compute_cigar, gapful, gapless
 
+import pandas as pd
+
 def dict2seqrec(cfg,s):
-    SEQUENCE=cfg["sequence"]["name"]
+    SEQUENCE=cfg["sequence"]["column"]
     seqrec=[]
     for row in s:
         rec=SeqRecord(Seq(row[SEQUENCE],IUPAC.ambiguous_dna),
@@ -53,7 +53,8 @@ def dict2aln(cfg,s):
     return(msa)
 
 def align_seqs(cfg,reference=HXB2_POL,do_codon=True,score_matrix=HIV_BETWEEN_F.load(),reverse_complement=False,expected_identity=None,quiet=True):
-    seqdict=get_seqs(cfg)
+    db=nexthiv.db.db_setup(name="rethinkdb")
+    seqdict=db.get_seqs(cfg)
     records=dict2seqrec(cfg,seqdict)
     # Set up discards
     discards=[]
@@ -98,18 +99,12 @@ def trim_alignment(cfg,a):
         row.seq=row.seq[startpos:endpos]
     return(trimal)
 
-def get_alignment(cfg):
-    NEXTHIV_DB=cfg["rethinkdb"]["db"]
-    SEQUENCE=cfg["sequence"]["processed_name"]
-    TBL=cfg["sequence"]["processed_table"]
-    connection = get_connection(cfg)
-    try:
-        curs=r.db(NEXTHIV_DB).table(TBL).pluck("id",SEQUENCE).run(connection)
-        # print('Sequence extraction completed.')
-    except RqlRuntimeError:
-        print('Error!')
-    finally:
-        s=[x for x in curs]
-        connection.close()
+def get_alignment(cfg,baseline=False):
+    db=nexthiv.db.db_setup(name=cfg["db"]["backend"])
+    if baseline:
+        id_list=get_baseline_ids(cfg)
+        s=db.get_aligned_seqs(cfg,id_list)
+    else:
+        s=db.get_aligned_seqs(cfg)
     msa=dict2aln(cfg,s)
     return(msa)

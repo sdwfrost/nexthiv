@@ -2,7 +2,11 @@
 
 import argparse
 import yaml
-import nexthiv
+import nexthiv.align as align
+import nexthiv.cluster as cluster
+import nexthiv.resistance as resistance
+import nexthiv.db
+import nexthiv.utils
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title='subcommands',description='valid subcommands',help='subcommand help',dest='subparser_name')
@@ -21,9 +25,11 @@ align_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=T
 distance_parser=subparsers.add_parser('distance',help='Calculate distances')
 distance_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
-cluster_parser=subparsers.add_parser('cluster',help='CLuster sequences')
+cluster_parser=subparsers.add_parser('cluster',help='Cluster sequences')
 cluster_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
+resistance_parser=subparsers.add_parser('resistance',help='Calculate resistance scores')
+resistance_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
 
 arguments=parser.parse_args()
 action=arguments.subparser_name
@@ -32,34 +38,46 @@ action=arguments.subparser_name
 if action=='init':
   config_file=arguments.config
   config=yaml.load(config_file)
-  nexthiv.db.db_setup(config)
+  db=nexthiv.db.db_setup(config["db"]["backend"])
+  db.db_init(config)
 
 # Import
 if action=='import':
   config_file=arguments.config
   config=yaml.load(config_file)
-  data=nexthiv.db.tsv2json(arguments.input)
+  db=nexthiv.db.db_setup(config["db"]["backend"])
+  data=db.tsv2json(arguments.input)
   tbl=arguments.destination
-  nexthiv.db.db_insert(config,tbl,data,chunksize=100000)
+  db.db_insert(config,tbl,data,chunksize=100000)
 
 # Align
 if action=='align':
   config_file=arguments.config
   config=yaml.load(config_file)
-  aln=nexthiv.align.align_seqs(config)
-  aln=nexthiv.align.trim_alignment(config,aln)
-  nexthiv.db.insert_seqs(config,aln,config['sequence']['processed_table'],config['sequence']['processed_name'])
+  db=nexthiv.db.db_setup(config["db"]["backend"])
+  aln=align.align_seqs(config)
+  aln=align.trim_alignment(config,aln)
+  db.insert_seqs(config,aln,config['sequence']['processed_table'],config['sequence']['processed_name'])
+  nexthiv.utils.insert_baseline_into_table(config,config['sequence']['processed_table'])
 
 # Resistance
+if action=='resistance':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  db=nexthiv.db.db_setup(config["db"]["backend"])
+  tbl=config["resistance"]["table"]
+  data=resistance.get_scores(config)
+  db.db_insert(config,tbl,data)
+  nexthiv.utils.insert_baseline_into_table(config,config['resistance']['table'])
 
 # Distances
 if action=='distance':
   config_file=arguments.config
   config=yaml.load(config_file)
-  nexthiv.cluster.insert_distances(config)
+  cluster.insert_distances(config)
 
 # Clustering
 if action=='cluster':
   config_file=arguments.config
   config=yaml.load(config_file)
-  nexthiv.cluster.insert_clustering(config)
+  cluster.insert_clustering(config)

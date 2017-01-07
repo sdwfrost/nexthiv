@@ -27,7 +27,8 @@ RUN apt-get update -qq && \
 	wget \
 	cmake \
   nodejs \
-  npm
+  npm \
+  libudunits2-dev
 
 ## Add RethinkDB repository
 
@@ -52,7 +53,12 @@ RUN apt-get update -qq && \
 RUN echo "r <- getOption('repos'); r['CRAN'] <- 'http://cran.rstudio.com'; options(repos = r);" > ~/.Rprofile
 RUN Rscript -e "install.packages('ape')"
 RUN Rscript -e "install.packages('ggplot2')"
+RUN Rscript -e "install.packages('ggforce')"
 RUN Rscript -e "install.packages('plotly')"
+RUN Rscript -e "install.packages('rethinker')"
+RUN Rscript -e "install.packages('cowplot')"
+RUN Rscript -e "install.packages('DT')"
+RUN Rscript -e "install.packages('xtable')"
 
 # Install the recent pip release
 RUN curl -O https://bootstrap.pypa.io/get-pip.py && \
@@ -71,17 +77,6 @@ RUN cd /home/docker/programs && \
 	make && \
 	cp iqtree-omp /usr/local/bin && \
 	rm -rf /home/docker/programs/IQ-TREE
-
-# Install MAFFT
-RUN cd /home/docker/programs && \
-	wget http://mafft.cbrc.jp/alignment/software/mafft-7.305-without-extensions-src.tgz && \
-	tar zxvf mafft-7.305-without-extensions-src.tgz && \
-	cd mafft-7.305-without-extensions/core && \
-	make clean && \
-	make && \
-	make install && \
-	rm /home/docker/programs/mafft-7.305-without-extensions-src.tgz && \
-	rm -rf /home/docker/programs/mafft-7.305-without-extensions
 
 # Install TN93
 RUN cd /home/docker/programs && \
