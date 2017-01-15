@@ -18,12 +18,18 @@ setup(
         'rethinkdb>=2.3',
         'PyYAML>=3.12',
         'biopython>=1.68',
+        'bioext>=0.17.4',
         'pandas>=0.19.1',
+        'pysam<0.9,>=0.7.5',
+        'networkx>=1.11',
+        'pygraphviz>=1.3.1',
+        'plotly>=1.13.0',
+        'ggpy>=0.1.2',
         'rpy2>=2.8.4'
     ],
-    dependency_links=[
-        'git+ssh://git@github.com/veg/bioext.git@master'
-    ],
+    #dependency_links=[
+    #    'git+ssh://git@github.com/veg/bioext.git@master'
+    #],
     scripts=[
         'bin/nexthiv'
     ],

@@ -11,6 +11,7 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r loadlibraries}
 suppressPackageStartupMessages(library(rethinker))
+suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(ggforce))
 suppressPackageStartupMessages(library(cowplot))
@@ -44,22 +45,40 @@ get_table <- function(db,tbl,maxResults=10000,host="localhost",port=28015,authKe
   df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
   return(df)
 }
+list_to_df <- function(l){
+  df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
+  return(df)
+}
 # Need to add column filters
 ```
+
+```{r}
+blank_theme <- theme_minimal()+
+  theme(
+  axis.title.x = element_blank(),
+  axis.title.y = element_blank(),
+  panel.border = element_blank(),
+  panel.grid=element_blank(),
+  axis.ticks = element_blank(),
+  plot.title=element_text(size=14, face="bold")
+  )
+```
+
 
 ```{r loadtables}
 demographics <- get_table(db,"demographics")
 sequences <- get_table(db,"sequences")
 clustering <- get_table(db,"clustering")
-resistance <- get_list(db,"resistance")
+resistance <- get_list(db,"resistance") %>% lapply(.,"[",c("id","BASELINE","PI_MUTATION_COUNT","NRTI_MUTATION_COUNT","NNRTI_MUTATION_COUNT")) %>% list_to_df
 ```
 
 ```{r makemastertable}
 master <- merge(sequences,clustering[,1:3],by.x="id",by.y="id")
+master <- merge(master,resistance,by.x="id",by.y="id")
 master <- merge(master,demographics,by="CFAR_PID")
 o <- order(master$CFAR_PID,as.double(master$AGE_AT_SEQUENCE))
 master <- master[o,]
-master$BASELINE <- !duplicated(master$CFAR_PID)
+baseline <- master[master$BASELINE==TRUE,]
 ```
 
 ### Summary
@@ -147,7 +166,34 @@ ggplotly(p)
 datatable(df)
 ```
 
+### Resistance
 
+#### PI resistance
+
+```{r}
+df <- as.data.frame.table(table(baseline$PI_MUTATION_COUNT))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
+
+#### NRTI resistance
+
+```{r nrtiresistance}
+df <- as.data.frame.table(table(baseline$NRTI_MUTATION_COUNT))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
+
+#### NNRTI resistance
+
+```{r nnrtipie}
+df <- as.data.frame.table(table(baseline$NNRTI_MUTATION_COUNT))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
 ### Clustering
 
 

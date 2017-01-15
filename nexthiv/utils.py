@@ -1,6 +1,10 @@
 import os
 import inspect
 import nexthiv
+import pysam
+from copy import copy
+from BioExt.io._SamBamIO import _to_seqrecord
+from BioExt.misc import gapful
 
 def get_data_directory():
     dd=os.path.join(os.path.dirname(inspect.getfile(nexthiv)),"data")
@@ -33,3 +37,31 @@ def insert_baseline_into_table(cfg,tbl,name="BASELINE"):
     data=[{"id":id ,name: id in bids} for id in sids]
     db=nexthiv.db.db_setup(name=cfg["db"]["backend"])
     db.db_update_by_id(cfg,tbl,data)
+
+def bam2records(bam_file, start=None, end=None):
+    try:
+        # Index bam file in order to samfile.fetch
+        pysam.index(bam_file)
+        samfile = pysam.Samfile(bam_file, 'rb')
+        length = samfile.header['SQ'][0]['LN']
+        fetch_args = []
+        if start is not None or end is not None:
+            fetch_args.extend([samfile.getrname(0), start, end])
+        seqs = [gapful(_to_seqrecord(samfile, record), insertions=False) for record in samfile.fetch(*fetch_args)]
+        result = [(seq + ('-' * (length - len(seq))))[start:end] for seq in seqs]
+    finally:
+        if samfile is not None:
+            samfile.close()
+    return(result)
+
+def extract_annotations(s,column,sep):
+    x=copy(s)
+    x=x.split(sep)
+    return(x[column])
+
+def invert_dict(d):
+    inv_d = {}
+    for k, v in d.items():
+        inv_d[v] = inv_d.get(v, [])
+        inv_d[v].append(k)
+    return(inv_d)

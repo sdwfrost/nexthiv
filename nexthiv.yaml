@@ -15,6 +15,7 @@ tables:
   - clustering
   - distances
   - phylogenies
+  - metadata
 sequence:
   table: 'sequences'
   column: 'SEQUENCE'

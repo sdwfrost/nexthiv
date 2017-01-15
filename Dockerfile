@@ -28,7 +28,8 @@ RUN apt-get update -qq && \
 	cmake \
   nodejs \
   npm \
-  libudunits2-dev
+  libudunits2-dev \
+  graphviz-dev
 
 ## Add RethinkDB repository
 
