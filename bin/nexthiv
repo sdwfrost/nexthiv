@@ -94,9 +94,18 @@ if action=='cluster':
 if action=='fasta':
   config_file=arguments.config
   config=yaml.load(config_file)
+  db=nexthiv.db.db_setup(config["db"]["backend"])
   if arguments.reference:
     msa=align.get_reference_alignment(config)
     SeqIO.write(msa,arguments.output,format="fasta")
   else:
     msa=align.get_alignment(config,arguments.baseline)
+    if arguments.baseline:
+        # A bit of a quick hack for Erik
+        ids=[r.id for r in msa]
+        piddict=db.get_dict(config,config["sequence"]["table"],"id",config["sequence"]["pid"])
+        yrdict=db.get_dict(config,config["sequence"]["table"],"id",config["sequence"]["collection_date"])
+        newids={x:str(piddict[x])+"_"+str(yrdict[x]) for x in ids}
+        for r in msa:
+            r.id=newids[r.id]
     AlignIO.write(msa,arguments.output,format="fasta")
