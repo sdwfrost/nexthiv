@@ -1,5 +1,6 @@
 import os
 import inspect
+import numpy as np
 import nexthiv
 import pysam
 from copy import copy
@@ -39,9 +40,10 @@ def insert_baseline_into_table(cfg,tbl,name="BASELINE"):
     db.db_update_by_id(cfg,tbl,data)
 
 def bam2records(bam_file, start=None, end=None):
+    samfile = None
     try:
         # Index bam file in order to samfile.fetch
-        pysam.index(bam_file)
+        #pysam.index(bam_file)
         samfile = pysam.Samfile(bam_file, 'rb')
         length = samfile.header['SQ'][0]['LN']
         fetch_args = []
@@ -65,3 +67,24 @@ def invert_dict(d):
         inv_d[v] = inv_d.get(v, [])
         inv_d[v].append(k)
     return(inv_d)
+
+def np_to_phylip(nm,m,fn):
+    f=open(fn,'w')
+    n=len(nm)
+    f.write(str(n)+"\n")
+    for i in range(n):
+        f.write(nm[i])
+        for j in range(n):
+            f.write("\t"+str(m[i,j]))
+        f.write("\n")
+    f.close()
+
+def get_list(cfg,tbl,col):
+    db=nexthiv.db.db_setup(name=cfg["db"]["backend"])
+    l=db.get_ids(cfg,tbl,col)
+    return(l)
+
+def get_set(cfg,tbl,col):
+    l=get_list(cfg,tbl,col)
+    s=set(l)
+    return(s)

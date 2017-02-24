@@ -1,6 +1,8 @@
+import os
+
 import nexthiv
 from nexthiv.refseqs import HXB2_POL
-from nexthiv.utils import get_baseline_ids
+from nexthiv.utils import get_baseline_ids, get_data_directory, get_set, bam2records
 
 from copy import copy, deepcopy
 
@@ -108,3 +110,16 @@ def get_alignment(cfg,baseline=False):
         s=db.get_aligned_seqs(cfg)
     msa=dict2aln(cfg,s)
     return(msa)
+
+def get_reference_alignment(cfg):
+    db=nexthiv.db.db_setup(name=cfg["db"]["backend"])
+    dd=get_data_directory()
+    bamfile=os.path.join(dd,"hiv_refs_prrt_trim.bam")
+    tbl=cfg["clustering"]["table"]
+    refalter=get_set(cfg,tbl,"REFALTER")
+    records=bam2records(bamfile,cfg["sequence"]["startpos"],cfg["sequence"]["endpos"])
+    output=[]
+    for r in records:
+        if r.id in refalter:
+            output.append(r)
+    return(output)

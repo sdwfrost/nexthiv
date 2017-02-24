@@ -1,6 +1,6 @@
 from collections import Counter
 import networkx as nx
-from tn93 import tn93
+from BioExt.tn93 import tn93
 
 def tn93_network(query,threshold,matchMode,minOverlap):
     nodes=Counter()
@@ -18,6 +18,22 @@ def tn93_network(query,threshold,matchMode,minOverlap):
                 nodes[q.id]+=1
                 edges.append([q.id,r.id])
     return(nodes,edges)
+
+# Not working for repeated sequences yet
+def tn93_nx(query,threshold,matchMode,minOverlap):
+    G=nx.Graph()
+    nnodes=len(query)
+    for q in query:
+        G.add_node(q.id)
+    L = len(str(query[0].seq))
+    for i in range(nnodes-1):
+        q = query[i]
+        for j in range(i+1,nnodes):
+            r = query[j]
+            newd = tn93(str(q.seq),str(r.seq),L,matchMode,minOverlap)
+            if newd < threshold:
+                G.add_edge(q.id,r.id)
+    return(G)
 
 def cluster_ids(nodes):
     result = [x for x in nodes if nodes[x]>0]

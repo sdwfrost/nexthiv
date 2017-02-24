@@ -30,6 +30,10 @@ sequence:
 clustering:
   table: 'clustering'
   distances_table: 'distances'
+  threshold: 1.0
+  ref_threshold: 0.05
+  ambiguities: 0
+  min_overlap: 100
 resistance:
   table: 'resistance'
   protease_length: 99
@@ -40,13 +44,6 @@ directories:
   datadir: './data'
   tmpdir: './tmp'
 programs:
-  tn93:
-    cmd: 'tn93'
-    threshold: 1.0
-    ref_threshold: 0.05
-    ambiguities: 'resolve'
-    min_overlap: 100
-    fraction: 1.0
   iqtree:
     cmd: 'iqtree-omp'
     threads: 4

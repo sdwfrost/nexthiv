@@ -1,6 +1,8 @@
 ---
+always_allow_html: yes
 output:
-  html_document
+  html_document: default
+  tufte::tufte_handout: default
 ---
 
 ## nextHIV Report {.tabset}
@@ -11,13 +13,19 @@ knitr::opts_chunk$set(echo = FALSE)
 
 ```{r loadlibraries}
 suppressPackageStartupMessages(library(rethinker))
+suppressPackageStartupMessages(library(ape))
 suppressPackageStartupMessages(library(magrittr))
 suppressPackageStartupMessages(library(ggplot2))
 suppressPackageStartupMessages(library(ggforce))
+suppressPackageStartupMessages(library(ggtree))
+suppressPackageStartupMessages(library(epiwidgets))
 suppressPackageStartupMessages(library(cowplot))
 suppressPackageStartupMessages(library(plotly))
 suppressPackageStartupMessages(library(DT))
 suppressPackageStartupMessages(library(xtable))
+suppressPackageStartupMessages(library(gamlss))
+suppressPackageStartupMessages(library(gamlss.dist))
+suppressPackageStartupMessages(library(gamlss.mx))
 ```
 
 ```{r setglobals}
@@ -49,10 +57,18 @@ list_to_df <- function(l){
   df <- do.call(rbind, lapply(l, data.frame, stringsAsFactors=FALSE))
   return(df)
 }
-# Need to add column filters
+extract_annotations <- function(a,col,sep){
+  strsplit(a,sep) %>% lapply(.,"[",col) %>% unlist
+}
+txt_to_dna <- function(nm,s){
+y <- t(sapply(strsplit(s,""), tolower))
+rownames(y) <- nm
+as.DNAbin(y)
+}
 ```
 
-```{r}
+
+```{r definethemes}
 blank_theme <- theme_minimal()+
   theme(
   axis.title.x = element_blank(),
@@ -68,17 +84,51 @@ blank_theme <- theme_minimal()+
 ```{r loadtables}
 demographics <- get_table(db,"demographics")
 sequences <- get_table(db,"sequences")
+regimens <- get_table(db,"regimens")
+processed_sequences <- get_table(db,"processed_sequences")
 clustering <- get_table(db,"clustering")
 resistance <- get_list(db,"resistance") %>% lapply(.,"[",c("id","BASELINE","PI_MUTATION_COUNT","NRTI_MUTATION_COUNT","NNRTI_MUTATION_COUNT")) %>% list_to_df
+#distances <- get_table(db,"distances")
 ```
 
+```{r processregimens}
+# naive
+o <- order(regimens$CFAR_PID,regimens$AGE_AT_START)
+regimens2 <- regimens[o,]
+regimens2 <- regimens2[!duplicated(regimens2$CFAR_PID),]
+```
+
+
+
 ```{r makemastertable}
-master <- merge(sequences,clustering[,1:3],by.x="id",by.y="id")
+#Note that as clustering only has baseline sequences, the following only has 2914 individuals
+master <- merge(sequences,clustering,by.x="id",by.y="id")
+master <- merge(master,processed_sequences,by.x="id",by.y="id")
 master <- merge(master,resistance,by.x="id",by.y="id")
 master <- merge(master,demographics,by="CFAR_PID")
+master <- merge(master,regimens2,by="CFAR_PID",all.x=TRUE,all.y=FALSE)
 o <- order(master$CFAR_PID,as.double(master$AGE_AT_SEQUENCE))
 master <- master[o,]
-baseline <- master[master$BASELINE==TRUE,]
+baseline <- master#[master$BASELINE==TRUE,]
+```
+
+```{r identifynaive}
+naive <- baseline$AGE_AT_SEQUENCE<baseline$AGE_AT_START
+naive[is.na(naive)] <- TRUE
+baseline$naive <- naive
+```
+
+
+```{r recentdiagnosis,eval=FALSE}
+recentd <- baseline$AGE_AT_ENROLLMENT-baseline$AGE_AT_HIV_DX<1./12
+recentd[is.na(recentd)] <- TRUE
+baseline$recentd <- recentd
+```
+
+
+```{r,eval=FALSE}
+write.table(demographics,file="demographics.txt",col.names=TRUE,row.names=FALSE,sep="\t",quote=FALSE)
+write.table(baseline,file="baseline.txt",col.names=TRUE,row.names=FALSE,sep="\t",quote=FALSE)
 ```
 
 ### Summary
@@ -137,7 +187,7 @@ p <- ggplot(x,aes(x=Country))+geom_bar()+xlab("Country of origin")+ylab("Count")
 ggplotly(p)
 ```
 
-```{r}
+```{r racecount}
 races <- c("Undefined","Caucasian","African American","Hispanic","Native American","Asian","Pacific Islander","Indian","Middle Eastern","African","Mixed")
 race <- as.integer(demographics$RACE)
 race <- race+1
@@ -153,7 +203,7 @@ ggplotly(p)
 ### Sequences
 
 
-```{r}
+```{r seqperperson}
 df <- as.data.frame.table(table(table(sequences$CFAR_PID)))
 names(df) <- c("Number","Count")
 p <- ggplot(df,aes(x=Number,y=Count))+geom_bar(stat="identity")+xlab("Sequences per individual")+ylab("Count")
@@ -168,37 +218,143 @@ datatable(df)
 
 ### Resistance
 
-#### PI resistance
+#### PI resistance mutations
+
+Naive:
 
 ```{r}
-df <- as.data.frame.table(table(baseline$PI_MUTATION_COUNT))
+df <- as.data.frame.table(table(baseline$PI_MUTATION_COUNT[baseline$naive==TRUE]))
 names(df) <- c("Number","Count")
 p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
 p
 ```
 
-#### NRTI resistance
+Experienced:
 
-```{r nrtiresistance}
-df <- as.data.frame.table(table(baseline$NRTI_MUTATION_COUNT))
+```{r}
+df <- as.data.frame.table(table(baseline$PI_MUTATION_COUNT[baseline$naive==FALSE]))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
+#### NRTI resistance mutations
+
+Naive:
+
+```{r nrtiresistancenaive}
+df <- as.data.frame.table(table(baseline$NRTI_MUTATION_COUNT[baseline$naive==TRUE]))
 names(df) <- c("Number","Count")
 p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
 p
 ```
 
-#### NNRTI resistance
+Experienced:
 
-```{r nnrtipie}
-df <- as.data.frame.table(table(baseline$NNRTI_MUTATION_COUNT))
+```{r nrtiresistanceexp}
+df <- as.data.frame.table(table(baseline$NRTI_MUTATION_COUNT[baseline$naive==FALSE]))
 names(df) <- c("Number","Count")
 p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
 p
 ```
+
+#### NNRTI resistance mutations
+
+Naive:
+
+```{r nnrtiresistancenaive}
+df <- as.data.frame.table(table(baseline$NNRTI_MUTATION_COUNT[baseline$naive==TRUE]))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
+
+Experienced:
+
+```{r nnrtiresistanceexp}
+df <- as.data.frame.table(table(baseline$NNRTI_MUTATION_COUNT[baseline$naive==FALSE]))
+names(df) <- c("Number","Count")
+p <- ggplot(df,aes(x="",y=Count,fill=Number))+geom_bar(width=1,stat="identity")+coord_polar("y", start=0)+blank_theme + theme(axis.text.x=element_blank())
+p
+```
+
+
+### Subtypes
+
+#### Breakdown
+
+```{r}
+subtypes <- extract_annotations(baseline$REFALTER,2,"\\|")
+df <- as.data.frame.table(table(subtypes))
+names(df) <- c("Subtype","Count")
+datatable(df)
+```
+
+
+#### Non B subtypes
+
+```{r nonbsubtypes}
+df2 <- df[df$Subtype!="B",]
+o <- order(df2$Count,decreasing=TRUE)
+df2 <- df2[o,]
+df2$Subtype <- factor(df2$Subtype,levels=df2$Subtype)
+p <- ggplot(df2,aes(x=Subtype,y=Count,fill=Subtype))+geom_bar(width=1,stat="identity")+scale_y_continuous()+theme(axis.text.x = element_text (angle = 90, vjust = 0.5, size = 16),legend.position="none")
+ggplotly(p)
+```
+
 ### Clustering
 
+```{r,eval=FALSE}
+thresh <- 0.001
+vars <- c("RISK1","SEX","RACE","AGE_AT_ENROLLMENT")
+varlabels <- c("Risk","Sex","Race","Age")
+nvars <- length(vars)
+df0 <- baseline[,c("MINDST","REFMINDST",vars)]
+df0$MINDST2 <- df0$MINDST
+df0$MINDST2[df0$MINDST<=thresh] <- 0.0
+df0$REFMINDST2 <- df0$REFMINDST
+df0$REFMINDST2[df0$REFMINDST<=thresh] <- 0.0
+df0$AGE_AT_ENROLLMENT <- as.double(df0$AGE_AT_ENROLLMENT)
+results <- list()
+for(i in 1:nvars){
+  print(varlabels[i])
+  v <- vars[i]
+  df <- na.omit(df0[,c("MINDST2",v)])
+  f1 <- paste("MINDST2 ~ ",v,sep="")
+  f2 <- paste("~",v)
+  g <- gamlss(as.formula(f1),nu.formula=as.formula(f2),data=df,family=ZAGA)
+  s <- summary(g)
+  r <- s[grep(v,row.names(s)),]
+  results[[v]] <- r
+}
+```
+
+```{r,eval=FALSE}
+vars <- c("RISK1","SEX","RACE","AGE_AT_ENROLLMENT")
+varlabels <- c("Risk","Sex","Race","Age")
+nvars <- length(vars)
+df0 <- baseline[,c("MINDST","REFMINDST",vars)]
+df0$MINDST[df0$MINDST<0.001] <- 0.001
+df0$AGE_AT_ENROLLMENT <- as.double(df0$AGE_AT_ENROLLMENT)
+results <- list()
+for(i in 1:nvars){
+  print(varlabels[i])
+  v <- vars[i]
+  df <- na.omit(df0[,c("MINDST",v)])
+  f1 <- paste("MINDST ~ ",v,sep="")
+  f2 <- paste("~",v)
+  g <- gamlssMX(as.formula(f1),pi.formula=as.formula(f2),data=df,family="GA",K=2)
+  s <- summary(g)
+  r <- s[grep(v,row.names(s)),]
+  results[[v]] <- r
+}
+```
+
+
+#### Distribution of closest sequences
 
 ```{r}
-d <- master
+d <- baseline
+d <- d[d$MINDST>=0,]
 o <- order(d$CFAR_PID,d$MINDST)
 idx <- !duplicated(d$CFAR_PID)
 d <- d[idx,]
@@ -206,14 +362,89 @@ p <- ggplot(d,aes(x=as.double(MINDST)))+geom_histogram(binwidth=0.001)+xlab("Min
 ggplotly(p)
 ```
 
-```{r}
+#### Minimum distance by gender
+
+```{r mindstgender}
 p <- ggplot(d,aes(y=as.double(MINDST),x=SEX))+geom_sina(aes(col=SEX))+xlab("Gender")+ylab("Distance")+scale_x_discrete(labels=c("Female","Male"))+theme(legend.position="none")
-ggplotly(p)
+p
 ```
+
+#### Minimum distance by risk factor
+
+```{r mindstrisk}
+p <- ggplot(d,aes(y=as.double(MINDST),x=RISK1))+geom_sina(aes(col=RISK1))+xlab("Risk behavior")+ylab("Distance")+theme(legend.position="none")
+p
+```
+
+#### Minimum distance by age
 
 ```{r}
-p <- ggplot(d,aes(y=as.double(MINDST),x=RISK1))+geom_sina(aes(col=RISK1))+xlab("Risk behavior")+ylab("Distance")+theme(legend.position="none")
-ggplotly(p)
+p <- ggplot(d,aes(y=as.double(MINDST),x=factor(AGE_AT_SEQUENCE>30)))+geom_sina(aes(col=factor(AGE_AT_SEQUENCE>30)))+xlab("Age")+ylab("Distance")+theme(legend.position="none")+scale_x_discrete(labels=c("<30","30+"))
+p
+```
+
+#### Minimum distance by year of diagnosis
+
+```{r}
+dx <- as.double(d$YEAR_OF_HIV_DX)
+dx[is.na(dx)] <- d$YEAR_OF_COHORT_ENTRY[is.na(dx)]
+d$dx <- dx
 ```
 
 
+```{r}
+p <- ggplot(d,aes(y=as.double(MINDST),x=dx))+geom_sina(aes(col=dx))+xlab("Year of diagnosis")+ylab("Distance")+theme(legend.position="none")+theme(axis.text.x = element_text(angle=90,hjust=0.1))
+p
+```
+
+### Phylogenies
+
+```{r}
+baseline.s <- txt_to_dna(as.character(baseline$CFAR_PID),as.character(baseline$SEQUENCE_ALIGNED))
+subtypes <- extract_annotations(as.character(baseline$REFALTER),2,"\\|")
+```
+
+#### Subtype C
+
+```{r}
+s <- baseline.s[subtypes=="C",]
+d <- dist.dna(s,model="TN93")
+tr <- nj(d)
+ggtree(tr)+theme_tree2()
+```
+
+#### Subtype BF
+
+```{r}
+s <- baseline.s[subtypes=="BF",]
+d <- dist.dna(s,model="TN93")
+tr <- nj(d)
+ggtree(tr)+theme_tree2()
+```
+
+#### Subtype A1
+
+```{r}
+s <- baseline.s[subtypes=="A1",]
+d <- dist.dna(s,model="TN93")
+tr <- nj(d)
+ggtree(tr)+theme_tree2()
+```
+
+#### Subtype CRF02_AG
+
+```{r}
+s <- baseline.s[subtypes=="02AG",]
+d <- dist.dna(s,model="TN93")
+tr <- nj(d)
+ggtree(tr)+theme_tree2()
+```
+
+#### Subtype CRF01_AE
+
+```{r}
+s <- baseline.s[subtypes=="01AE",]
+d <- dist.dna(s,model="TN93")
+tr <- nj(d)
+ggtree(tr)+theme_tree2()
+```

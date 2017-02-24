@@ -6,7 +6,9 @@ import nexthiv.align as align
 import nexthiv.cluster as cluster
 import nexthiv.resistance as resistance
 import nexthiv.db
-import nexthiv.utils
+import nexthiv.utils as utils
+
+from Bio import SeqIO,AlignIO
 
 parser = argparse.ArgumentParser()
 subparsers = parser.add_subparsers(title='subcommands',description='valid subcommands',help='subcommand help',dest='subparser_name')
@@ -30,6 +32,12 @@ cluster_parser.add_argument('-c','--config',type=argparse.FileType('r'),required
 
 resistance_parser=subparsers.add_parser('resistance',help='Calculate resistance scores')
 resistance_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+
+fasta_parser=subparsers.add_parser('fasta',help='Extract FASTA')
+fasta_parser.add_argument('-c','--config',type=argparse.FileType('r'),required=True,help='YAML configuration file')
+fasta_parser.add_argument('-o','--output',type=argparse.FileType('w'),required=True,help='Output filename')
+fasta_parser.add_argument('-r','--reference',dest="reference",action="store_true",help='Extract closest references')
+fasta_parser.add_argument('-b','--baseline',dest="baseline",action="store_true",help='Extract baseline sequences')
 
 arguments=parser.parse_args()
 action=arguments.subparser_name
@@ -58,7 +66,7 @@ if action=='align':
   aln=align.align_seqs(config)
   aln=align.trim_alignment(config,aln)
   db.insert_seqs(config,aln,config['sequence']['processed_table'],config['sequence']['processed_name'])
-  nexthiv.utils.insert_baseline_into_table(config,config['sequence']['processed_table'])
+  utils.insert_baseline_into_table(config,config['sequence']['processed_table'])
 
 # Resistance
 if action=='resistance':
@@ -68,7 +76,7 @@ if action=='resistance':
   tbl=config["resistance"]["table"]
   data=resistance.get_scores(config)
   db.db_insert(config,tbl,data)
-  nexthiv.utils.insert_baseline_into_table(config,config['resistance']['table'])
+  utils.insert_baseline_into_table(config,config['resistance']['table'])
 
 # Distances
 if action=='distance':
@@ -81,3 +89,14 @@ if action=='cluster':
   config_file=arguments.config
   config=yaml.load(config_file)
   cluster.insert_clustering(config)
+
+# FASTA
+if action=='fasta':
+  config_file=arguments.config
+  config=yaml.load(config_file)
+  if arguments.reference:
+    msa=align.get_reference_alignment(config)
+    SeqIO.write(msa,arguments.output,format="fasta")
+  else:
+    msa=align.get_alignment(config,arguments.baseline)
+    AlignIO.write(msa,arguments.output,format="fasta")

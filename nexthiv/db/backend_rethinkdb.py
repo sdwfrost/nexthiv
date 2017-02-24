@@ -63,15 +63,15 @@ def db_update(cfg,tbl,data,chunksize=100000):
     finally:
         connection.close()
 
-def db_update_by_id(cfg,tbl,data):
+def db_update_by_id(cfg,tbl,data,idvar="id"):
     NEXTHIV_DB=cfg["db"]["name"]
     connection=get_connection(cfg)
     if not r.db(NEXTHIV_DB).table_list().contains(tbl):
         stop("Table "+tbl+" does not exist.")
     try:
         for d in data:
-            id=d["id"]
-            d2={k: v for k, v in d.items() if k!="id"}
+            id=d[idvar]
+            d2={k: v for k, v in d.items() if k!=idvar}
             r.db(NEXTHIV_DB).table(tbl).get_all(id).update(d2).run(connection)
     except RqlRuntimeError:
         stop("Error importing "+tbl+".")
